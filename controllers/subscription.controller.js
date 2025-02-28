@@ -42,3 +42,45 @@ export const getUserSubscriptions = async (req, res, next) => {
         next(e);
     }
 }
+
+export const updateSubscription = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { renewalDate, reminderDays } = req.body;
+
+        const subscription = await Subscription.findOne({ _id: id, user: req.user._id });
+
+        if (!subscription) {
+            const error = new Error('Subscription not found or access denied');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        const updatedSubscription = await Subscription.findOneAndUpdate(
+            { _id: id },
+            req.body,
+            { new: true, runValidators: true }
+        );
+
+        if (renewalDate || reminderDays) {
+            await workflowClient.trigger({
+                url: `${SERVER_URL}/api/v1/workflows/subscription/reminder`,
+                body: {
+                    subscriptionId: id,
+                    update: true
+                },
+                headers: { 'content-type': 'application/json' },
+                retries: 0,
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Subscription updated successfully",
+            data: updatedSubscription
+        });
+
+    } catch (e) {
+        next(e);
+    }
+};
