@@ -27,6 +27,24 @@ export const createSubscription = async (req, res, next) => {
     }
 }
 
+export const getSubscription = async (req, res, next) => {
+    try {
+        const subscription = await Subscription.findById(req.params.id);
+
+        if (!subscription) {
+            return res.status(404).json({ message: "Subscription not found" });
+        }
+
+        if (subscription.user.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: "Access denied" });
+        }
+
+        res.status(200).json({ success: true, data: subscription });
+    } catch (e) {
+        next(e);
+    }
+};
+
 export const getUserSubscriptions = async (req, res, next) => {
     try {
         if (req.user._id.toString() !== req.params.id) {
