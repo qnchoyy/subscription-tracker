@@ -102,3 +102,23 @@ export const updateSubscription = async (req, res, next) => {
         next(e);
     }
 };
+
+export const deleteSubscription = async (req, res, next) => {
+    try {
+        const subscription = await Subscription.findById(req.params.id);
+
+        if (!subscription) {
+            return res.status(404).json({ message: "Subscription not found" });
+        }
+
+        if (subscription.user.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: "Access denied" });
+        }
+
+        await Subscription.findByIdAndDelete(req.params.id);
+
+        res.status(200).json({ success: true, message: "Subscription deleted successfully" });
+    } catch (e) {
+        next(e);
+    }
+};
