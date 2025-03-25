@@ -21,6 +21,7 @@ export const sendReminderEmail = async ({ to, type, subscription }) => {
         planName: subscription.name,
         price: `${subscription.currency} ${subscription.price} (${subscription.frequency})`,
         paymentMethod: subscription.paymentMethod,
+
     }
 
     const message = template.generateBody(mailInfo);
@@ -33,11 +34,18 @@ export const sendReminderEmail = async ({ to, type, subscription }) => {
         html: message,
     }
 
-    transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-            return console.log(error, 'Error sending email')
-        }
+    try {
+        const info = await new Promise((resolve, reject) => {
+            transporter.sendMail(mailOptions, (error, info) => {
+                if (error) reject(error);
+                else resolve(info);
+            });
+        });
 
         console.log('Email sent: ' + info.response);
-    })
+        return info;
+    } catch (error) {
+        console.error('Error sending email:', error);
+        throw error;
+    }
 }
